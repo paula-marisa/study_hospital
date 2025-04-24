@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import matplotlib as plt
 from io import BytesIO
 
 # Funções de categorização
@@ -86,22 +85,15 @@ if uploaded:
         mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
-    # Gráficos de distribuição
+    # Gráficos de distribuição usando Streamlit nativo
     st.subheader('Distribuição de A/C Arkray')
-    fig1, ax1 = plt.subplots()
-    df['status_ac_arkray'].value_counts().plot(kind='bar', ax=ax1)
-    ax1.set_xlabel('Categoria')
-    ax1.set_ylabel('Contagem')
-    st.pyplot(fig1)
+    ac_counts = df['status_ac_arkray'].value_counts()
+    st.bar_chart(ac_counts)
 
     st.subheader('Distribuição de P/C Arkray')
-    fig2, ax2 = plt.subplots()
-    df['status_pc_arkray'].value_counts().plot(kind='bar', ax=ax2)
-    ax2.set_xlabel('Categoria')
-    ax2.set_ylabel('Contagem')
-    st.pyplot(fig2)
+    pc_counts = df['status_pc_arkray'].value_counts()
+    st.bar_chart(pc_counts)
 
     st.success('Processamento concluído!')
-
 else:
     st.info('Por favor, carregue um arquivo Excel para iniciar o processamento.')
