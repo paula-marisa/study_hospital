@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from io import BytesIO
 
 # Funções de categorização
@@ -40,7 +39,7 @@ def categorize_pc(val):
         return None
     return 'normal' if num < 150 else 'significativa'
 
-# Mapeamentos de patologia
+# Mapas de patologia
 m_ac = {
     'normal': 'sem nefropatia',
     'micro': 'nefropatia incipiente (diabética)',
@@ -55,53 +54,36 @@ st.title('Processamento de Urinálise - A/C e P/C')
 uploaded = st.file_uploader('Carregue o arquivo Excel', type=['xlsx'])
 
 if uploaded:
-    # Leitura e limpeza
     df = pd.read_excel(uploaded, header=3)
     df.columns = df.columns.str.strip()
-    # Renomear colunas
     df = df.rename(columns={
-        'Albumina Arkray (mg/L)':    'alb_arkray',
+        'Albumina Arkray (mg/L)': 'alb_arkray',
         'Creatinina Arkray (mg/dL)': 'cre_arkray',
-        'P/C Arkray (mg/gCr)':       'pc_arkray',
-        'A/C Arkray (mg/gCr)':       'ac_arkray'
+        'P/C Arkray (mg/gCr)': 'pc_arkray',
+        'A/C Arkray (mg/gCr)': 'ac_arkray'
     })
-    # Categorização e patologias
-    df['status_ac_arkray'] = df['ac_arkray'].apply(categorize_ac)
-    df['status_pc_arkray'] = df['pc_arkray'].apply(categorize_pc)
-    df['patologia_ac_arkray'] = df['status_ac_arkray'].map(m_ac)
-    df['patologia_pc_arkray'] = df['status_pc_arkray'].map(m_pc)
+    df['status_ac'] = df['ac_arkray'].apply(categorize_ac)
+    df['status_pc'] = df['pc_arkray'].apply(categorize_pc)
+    df['patologia_ac'] = df['status_ac'].map(m_ac)
+    df['patologia_pc'] = df['status_pc'].map(m_pc)
 
-    # Exibir tabela processada
     st.subheader('Dados Processados')
     st.dataframe(df)
 
-    # Botão de download do Excel processado
     towrite = BytesIO()
     df.to_excel(towrite, index=False, engine='openpyxl')
     towrite.seek(0)
-    st.download_button(
-        label='📥 Baixar Excel Processado',
-        data=towrite,
-        file_name='ESTUDO_URINAS_PROCESSADO.xlsx',
-        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
+    st.download_button('📥 Baixar Excel Processado',
+                    data=towrite,
+                    file_name='ESTUDO_URINAS_PROCESSADO.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
-    # Gráficos de distribuição
     st.subheader('Distribuição de A/C Arkray')
-    fig1, ax1 = plt.subplots()
-    df['status_ac_arkray'].value_counts().plot(kind='bar', ax=ax1)
-    ax1.set_xlabel('Categoria')
-    ax1.set_ylabel('Contagem')
-    st.pyplot(fig1)
+    st.bar_chart(df['status_ac'].value_counts())
 
     st.subheader('Distribuição de P/C Arkray')
-    fig2, ax2 = plt.subplots()
-    df['status_pc_arkray'].value_counts().plot(kind='bar', ax=ax2)
-    ax2.set_xlabel('Categoria')
-    ax2.set_ylabel('Contagem')
-    st.pyplot(fig2)
+    st.bar_chart(df['status_pc'].value_counts())
 
     st.success('Processamento concluído!')
-
 else:
-    st.info('Por favor, carregue um arquivo Excel para iniciar o processamento.')
+    st.info('Por favor, carregue um arquivo Excel para iniciar.')
