@@ -50,7 +50,7 @@ m_pc = {
     'significativa': 'alteração de função renal'
 }
 
-st.title('Processamento de Urinálise - A/C e P/C')
+st.title('Análise comparativa e significado clinico de A/C e P/C das urinas nos equipamentos Arkray, Sysmex e Roche')
 uploaded = st.file_uploader('Carregue o arquivo Excel', type=['xlsx'])
 
 if uploaded:
