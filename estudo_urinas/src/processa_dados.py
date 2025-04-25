@@ -21,8 +21,7 @@ def categorize_ac(val):
         return 'normal (<30)'
     if num <= 300:
         return 'microalbuminúria (30–300)'
-    return 'macro (>300)'
-
+    return 'albuminúria franca ou proteinúria (>300)'
 
 def categorize_pc(val):
     try:
@@ -55,8 +54,8 @@ def categorize_ref(val):
     if num < 30:
         return 'normal (<30)'
     if num <= 300:
-        return 'micro (30–300)'
-    return 'macro (>300)'
+        return 'microalbuminúria (30–300)'
+    return 'albuminúria franca ou proteinúria (>300)'
 
 st.title('Análise de A/C e P/C por Equipamento e Área')
 
@@ -91,9 +90,9 @@ for dev in ['arkray','sysmex','cobas']:
 # Show individual equipment charts
 st.header('Distribuição por Equipamento')
 for dev in ['arkray','sysmex','cobas']:
-    st.subheader(f'Arkray {dev.capitalize()} - A/C')
+    st.subheader(f'{dev.capitalize()} - A/C')
     st.bar_chart(df[f'status_ac_{dev}'].value_counts())
-    st.subheader(f'P/C {dev.capitalize()}')
+    st.subheader(f'{dev.capitalize()} - P/C')
     st.bar_chart(df[f'status_pc_{dev}'].value_counts())
 
 # Compare normal A/C by area for each equipment
@@ -117,5 +116,5 @@ df_pc3 = df.loc[mask_pc3, ['tube','status_pc_arkray','status_pc_sysmex','status_
 st.write(df_pc3 if not df_pc3.empty else 'Nenhuma amostra com três categorias totalmente diferentes.')
 
 # Download processed
-st.subheader('Baixar Dados Processados')
-btn = st.download_button('📥 Baixar Excel Processado', data=BytesIO(df.to_excel(index=False, engine='openpyxl', excel_writer=BytesIO())), file_name='processed.xlsx')
+st.subheader('Download dos Dados Processados')
+btn = st.download_button('📥 Download do Excel Processado', data=BytesIO(df.to_excel(index=False, engine='openpyxl', excel_writer=BytesIO())), file_name='processed.xlsx')
