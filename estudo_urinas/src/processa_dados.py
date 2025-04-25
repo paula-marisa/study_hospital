@@ -140,7 +140,7 @@ for titulo, cat in cats_ac:
             color=alt.Color('Equipamento:N',
                 scale=alt.Scale(
                     domain=['Arkray','Sysmex','Cobas'],
-                    range=['#4E79A7', '#59A14F', '#E15759']
+                    range=['#007fff', '#00ff00', '#ff0000']
                 )
             )
         )
@@ -174,7 +174,7 @@ for titulo, cat in cats_pc:
             color=alt.Color('Equipamento:N',
                 scale=alt.Scale(
                     domain=['Arkray','Sysmex','Cobas'],
-                    range=['#4E79A7', '#59A14F', '#E15759']
+                    range=['#007fff', '#00ff00', '#ff0000']
                 )
             )
         )
