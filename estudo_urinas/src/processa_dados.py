@@ -111,14 +111,48 @@ for dev in ['arkray','sysmex','cobas']:
         st.subheader(f'{nome} – Proteína/Creatinina')
         st.bar_chart(df[f'status_pc_{dev}'].value_counts())
 
-# — Gráfico de valores normais por área — #
-st.header('Valores normais de Albumina/Creatinina por área')
-area_ac = pd.DataFrame({
-    dev.capitalize(): df[df[f'status_ac_{dev}']=='normal (<30 mg/g)']
-                           .groupby('área').size()
-    for dev in ['arkray','sysmex','cobas']
-}).fillna(0)
-st.area_chart(area_ac)
+# — Gráfico de valores por Área para Albumina/Creatinina — #
+st.header('Distribuição de A/C por Área')
+
+# Definimos as três categorias
+cats_ac = [
+    ('Valores abaixo do normal (<30 mg/g)', 'normal (<30 mg/g)'),
+    ('Microalbuminúria (30–300 mg/g)',   'microalbuminúria (30–300 mg/g)'),
+    ('Albuminúria manifesta (>300 mg/g)','albuminúria manifesta (>300 mg/g)')
+]
+
+for titulo, cat in cats_ac:
+    st.subheader(titulo)
+    # monta um DataFrame tendo cada coluna = um equipamento, índice = área
+    df_area = pd.DataFrame({
+        dev.capitalize(): (
+            df[df[f'status_ac_{dev}'] == cat]
+              .groupby('área').size()
+        )
+        for dev in ['arkray','sysmex','cobas']
+    }).fillna(0)
+    st.area_chart(df_area)
+
+# — Gráfico de valores por Área para Proteína/Creatinina — #
+st.header('Distribuição de P/C por Área')
+
+# As categorias agora com limites de P/C
+cats_pc = [
+    ('Valores abaixo do normal (<150 mg/g)', 'normal (<150 mg/g)'),
+    ('Microproteinúria (150–300 mg/g)',      'microproteinúria (150–300 mg/g)'),
+    ('Proteinúria manifesta (>300 mg/g)',    'proteinúria manifesta (>300 mg/g)')
+]
+
+for titulo, cat in cats_pc:
+    st.subheader(titulo)
+    df_area = pd.DataFrame({
+        dev.capitalize(): (
+            df[df[f'status_pc_{dev}'] == cat]
+              .groupby('área').size()
+        )
+        for dev in ['arkray','sysmex','cobas']
+    }).fillna(0)
+    st.area_chart(df_area)
 
 # — Amostras discordantes — #
 st.header('Amostras com categorias totalmente diferentes')
