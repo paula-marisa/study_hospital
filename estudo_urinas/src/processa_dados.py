@@ -133,18 +133,18 @@ for titulo, cat in cats_ac:
     # area chart com cores personalizadas
     chart = (
         alt.Chart(long)
-           .mark_area(opacity=0.4)
-           .encode(
-               x=alt.X('Área:N', axis=alt.Axis(labelAngle=0, title='Área')),
-               y=alt.Y('Contagem:Q', title='N.º de amostras'),
-               color=alt.Color('Equipamento:N',
-                   scale=alt.Scale(
-                       domain=['Arkray','Sysmex','Cobas'],
-                       range=['lightblue','lightgreen','lightcoral']
-                   )
-               )
-           )
-           .properties(width=700)
+        .mark_area(opacity=0.4)
+        .encode(
+            x=alt.X('Área:N', axis=alt.Axis(labelAngle=0, title='Área')),
+            y=alt.Y('Contagem:Q', title='N.º de amostras'),
+            color=alt.Color('Equipamento:N',
+                scale=alt.Scale(
+                    domain=['Arkray','Sysmex','Cobas'],
+                    range=['blue','green','coral']
+                )
+            )
+        )
+        .properties(width=700)
     )
     st.altair_chart(chart, use_container_width=True)
 
@@ -167,18 +167,18 @@ for titulo, cat in cats_pc:
     long = wide.melt(id_vars='Área', var_name='Equipamento', value_name='Contagem')
     chart = (
         alt.Chart(long)
-           .mark_area(opacity=0.4)
-           .encode(
-               x=alt.X('Área:N', axis=alt.Axis(labelAngle=0, title='Área')),
-               y=alt.Y('Contagem:Q', title='N.º de amostras'),
-               color=alt.Color('Equipamento:N',
-                   scale=alt.Scale(
-                       domain=['Arkray','Sysmex','Cobas'],
-                       range=['lightblue','lightgreen','lightcoral']
-                   )
-               )
-           )
-           .properties(width=700)
+        .mark_area(opacity=0.4)
+        .encode(
+            x=alt.X('Área:N', axis=alt.Axis(labelAngle=0, title='Área')),
+            y=alt.Y('Contagem:Q', title='N.º de amostras'),
+            color=alt.Color('Equipamento:N',
+                scale=alt.Scale(
+                    domain=['Arkray','Sysmex','Cobas'],
+                    range=['blue','green','coral']
+                )
+            )
+        )
+        .properties(width=700)
     )
     st.altair_chart(chart, use_container_width=True)
 
