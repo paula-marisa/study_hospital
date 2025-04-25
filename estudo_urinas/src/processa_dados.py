@@ -106,46 +106,56 @@ for dev in ['Arkray','Sysmex','Cobas']:
         df[f'Status PC {dev}'] = df[col_pc].apply(categorize_pc)
         df[f'Ref PC {dev}'] = df[col_pc].apply(categorize_ref)
 
-# Gráficos individuais por equipamento
-st.header('Distribuição por Equipamento')
+# Gráficos individuais por equipamento (Limites de Referência)
+st.header('Distribuição por Equipamento (Limites de Referência)')
+
+# Ordem fixa das categorias de referência
+ordem_cats = [
+    'normal (<30 mg/g)',
+    'microalbuminúria (30–300 mg/g)',
+    'albuminúria manifesta (>300 mg/g)'
+]
+
 for dev, cor in zip(['Arkray','Sysmex','Cobas'], ['#1f77b4','#ff7f0e','#2ca02c']):
-    st.subheader(f'{dev} – Albumina/Creatinina')
-    data_ac = (
-    df[f'Status AC {dev}']
-    .value_counts()
-    .reset_index(name='Contagem')    # aqui o nome da série passa a ser 'Contagem'
-    .rename(columns={'index':'Categoria'})
-)
-
-chart_ac = (
-    alt.Chart(data_ac)
-    .mark_bar(color=cor)
-    .encode(
-        x=alt.X('Categoria:N', axis=alt.Axis(labelAngle=0, title='Categoria')),
-        y=alt.Y('Contagem:Q', title='Número de amostras')
+    # Albumina/Creatinina
+    st.subheader(f'{dev} – Albumina/Creatinina (Ref.)')
+    vc_ac = (
+        df[f'Ref AC {dev}']
+        .value_counts()
+        .reindex(ordem_cats, fill_value=0)
+        .reset_index(name='Contagem')
+        .rename(columns={'index':'Categoria'})
     )
-    .properties(width=600)
-)
-st.altair_chart(chart_ac, use_container_width=True)
-
-st.subheader(f'{dev} – Proteína/Creatinina')
-data_pc = (
-    df[f'Status PC {dev}']
-    .value_counts()
-    .reset_index(name='Contagem')
-    .rename(columns={'index':'Categoria'})
-)
-
-chart_pc = (
-        alt.Chart(data_pc)
+    chart_ac = (
+        alt.Chart(vc_ac)
         .mark_bar(color=cor)
         .encode(
-            x=alt.X('Categoria:N', axis=alt.Axis(labelAngle=0)),
+            x=alt.X('Categoria:N', sort=ordem_cats, axis=alt.Axis(labelAngle=0, title='Categoria')),
             y=alt.Y('Contagem:Q', title='Número de amostras')
         )
         .properties(width=500)
     )
-st.altair_chart(chart_pc, use_container_width=True)
+    st.altair_chart(chart_ac, use_container_width=True)
+
+    # Proteína/Creatinina
+    st.subheader(f'{dev} – Proteína/Creatinina (Ref.)')
+    vc_pc = (
+        df[f'Ref PC {dev}']
+        .value_counts()
+        .reindex(ordem_cats, fill_value=0)
+        .reset_index(name='Contagem')
+        .rename(columns={'index':'Categoria'})
+    )
+    chart_pc = (
+        alt.Chart(vc_pc)
+        .mark_bar(color=cor)
+        .encode(
+            x=alt.X('Categoria:N', sort=ordem_cats, axis=alt.Axis(labelAngle=0, title='Categoria')),
+            y=alt.Y('Contagem:Q', title='Número de amostras')
+        )
+        .properties(width=500)
+    )
+    st.altair_chart(chart_pc, use_container_width=True)
 
 # Gráficos por área para valores NORMAL, MICRO e ALTO
 limites = [
