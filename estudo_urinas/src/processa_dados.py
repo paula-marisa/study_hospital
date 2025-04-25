@@ -102,14 +102,50 @@ for dev in ['arkray','sysmex','cobas']:
 
 # — Exibir gráficos individuais (Status do equipamento) — #
 st.header('Distribuição por equipamento (Status interno)')
+
+# Mapa de cores
+color_map = {
+    'arkray': '#007fff',  # azul vivo claro
+    'sysmex': '#00ff00',  # verde vivo claro
+    'cobas':  '#ff0000'   # vermelho claro
+}
+
 for dev in ['arkray','sysmex','cobas']:
     nome = dev.capitalize()
+    cor = color_map[dev]
+    
+    # Albumina/Creatinina
     if f'status_ac_{dev}' in df.columns:
         st.subheader(f'{nome} – Albumina/Creatinina')
-        st.bar_chart(df[f'status_ac_{dev}'].value_counts())
+        vc = df[f'status_ac_{dev}'].value_counts().reset_index()
+        vc.columns = ['Categoria','Contagem']
+        chart = (
+            alt.Chart(vc)
+            .mark_bar(color=cor)
+            .encode(
+                x=alt.X('Categoria:N', axis=alt.Axis(labelAngle=0, title='Categoria')),
+                y=alt.Y('Contagem:Q', title='N.º de amostras')
+            )
+            .properties(width=400)
+        )
+        st.altair_chart(chart, use_container_width=True)
+
+    # Proteína/Creatinina
     if f'status_pc_{dev}' in df.columns:
         st.subheader(f'{nome} – Proteína/Creatinina')
-        st.bar_chart(df[f'status_pc_{dev}'].value_counts())
+        vc = df[f'status_pc_{dev}'].value_counts().reset_index()
+        vc.columns = ['Categoria','Contagem']
+        chart = (
+            alt.Chart(vc)
+            .mark_bar(color=cor)
+            .encode(
+                x=alt.X('Categoria:N', axis=alt.Axis(labelAngle=0, title='Categoria')),
+                y=alt.Y('Contagem:Q', title='N.º de amostras')
+            )
+            .properties(width=400)
+        )
+        st.altair_chart(chart, use_container_width=True)
+
 
 # — Gráfico de valores por Área para Albumina/Creatinina — #
 st.header('Distribuição de A/C por Área')
