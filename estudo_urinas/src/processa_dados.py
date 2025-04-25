@@ -55,7 +55,7 @@ uploaded = st.file_uploader('Carregue o arquivo Excel', type=['xlsx'])
 
 if uploaded:
     # Leitura e limpeza
-    df = pd.read_excel(uploaded, header=3)
+    df = pd.read_excel(uploaded, header=3, engine='xlrd')
     df.columns = df.columns.str.strip()
     # Renomear colunas
     df = df.rename(columns={
