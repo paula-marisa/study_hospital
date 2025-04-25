@@ -121,17 +121,32 @@ cats_ac = [
     ('Albuminúria manifesta (>300 mg/g)','albuminúria manifesta (>300 mg/g)')
 ]
 
-for titulo, cat in cats_ac:
-    st.subheader(titulo)
-    # monta um DataFrame tendo cada coluna = um equipamento, índice = área
-    df_area = pd.DataFrame({
-        dev.capitalize(): (
-            df[df[f'status_ac_{dev}'] == cat]
-              .groupby('área').size()
-        )
-        for dev in ['arkray','sysmex','cobas']
-    }).fillna(0)
-    st.area_chart(df_area)
+# — Valores abaixo do normal (<30) — #
+st.header('A/C abaixo do normal por área')
+area_ac_abaixo = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_ac_{dev}']=='normal (<30 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_ac_abaixo)
+
+# — Valores microalbuminúria (30–300) — #
+st.header('A/C microalbuminúria por área')
+area_ac_micro = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_ac_{dev}']=='microalbuminúria (30–300 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_ac_micro)
+
+# — Albuminúria manifesta (>300) — #
+st.header('A/C acima do normal por área')
+area_ac_alta = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_ac_{dev}']=='albuminúria manifesta (>300 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_ac_alta)
 
 # — Gráfico de valores por Área para Proteína/Creatinina — #
 st.header('Distribuição de P/C por Área')
@@ -143,16 +158,33 @@ cats_pc = [
     ('Proteinúria manifesta (>300 mg/g)',    'proteinúria manifesta (>300 mg/g)')
 ]
 
-for titulo, cat in cats_pc:
-    st.subheader(titulo)
-    df_area = pd.DataFrame({
-        dev.capitalize(): (
-            df[df[f'status_pc_{dev}'] == cat]
-              .groupby('área').size()
-        )
-        for dev in ['arkray','sysmex','cobas']
-    }).fillna(0)
-    st.area_chart(df_area)
+# — P/C abaixo do normal (<150) — #
+st.header('P/C abaixo do normal por área')
+area_pc_abaixo = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_pc_{dev}']=='normal (<150 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_pc_abaixo)
+
+# — P/C microproteinúria (150–300) — #
+st.header('P/C microproteinúria por área')
+area_pc_micro = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_pc_{dev}']=='microproteinúria (150–300 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_pc_micro)
+
+# — P/C proteinúria manifesta (>300) — #
+st.header('P/C acima do normal por área')
+area_pc_alta = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_pc_{dev}']=='proteinúria manifesta (>300 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_pc_alta)
+
 
 # — Amostras discordantes — #
 st.header('Amostras com categorias totalmente diferentes')
