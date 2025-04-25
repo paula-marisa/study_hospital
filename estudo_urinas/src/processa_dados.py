@@ -111,6 +111,14 @@ for dev in ['arkray','sysmex','cobas']:
         st.subheader(f'{nome} – Proteína/Creatinina')
         st.bar_chart(df[f'status_pc_{dev}'].value_counts())
         
+# — Ordem das Categorias — #
+ordem_cats = [
+    'normal (<30 mg/g)',
+    'microalbuminúria (30–300 mg/g)',
+    'albuminúria manifesta (>300 mg/g)'
+]
+cores = {'Arkray':'#1f77b4','Sysmex':'#ff7f0e','Cobas':'#2ca02c'}
+        
 # — Gráficos por Área — #
 st.header('Distribuição por Área e Categoria')
 for titulo, categoria in [
