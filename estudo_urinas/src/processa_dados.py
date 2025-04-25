@@ -116,9 +116,9 @@ st.header('Distribuição de A/C por Área')
 
 # Definimos as três categorias e respetivos DataFrames
 cats_ac = [
-    ('Valores abaixo do normal (<30 mg/g)', 'normal (<30 mg/g)'),
-    ('Microalbuminúria (30–300 mg/g)',       'microalbuminúria (30–300 mg/g)'),
-    ('Albuminúria manifesta (>300 mg/g)',    'albuminúria manifesta (>300 mg/g)')
+    ('Valores abaixo do normal (<30 mg/g)', 'Abaixo do normal (<30 mg/g)'),
+    ('Valores normais (30–300 mg/g)',       'Normal (30–300 mg/g)'),
+    ('Valores acima do normal (>300 mg/g)',    'Acima do normal (>300 mg/g)')
 ]
 
 for titulo, cat in cats_ac:
@@ -152,9 +152,9 @@ for titulo, cat in cats_ac:
 st.header('Distribuição de P/C por Área')
 
 cats_pc = [
-    ('Valores abaixo do normal (<150 mg/g)', 'normal (<150 mg/g)'),
-    ('Microproteinúria (150–300 mg/g)',       'microproteinúria (150–300 mg/g)'),
-    ('Proteinúria manifesta (>300 mg/g)',     'proteinúria manifesta (>300 mg/g)')
+    ('Valores abaixo do normal (<150 mg/g)', 'Abaixo do normal (<150 mg/g)'),
+    ('Valores normais (150–300 mg/g)',       'Normal (150–300 mg/g)'),
+    ('Valores acima do normal (>300 mg/g)',     'Acima do normal (>300 mg/g)')
 ]
 
 for titulo, cat in cats_pc:
