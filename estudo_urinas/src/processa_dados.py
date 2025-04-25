@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
-# Funções de categorização (faixas de cada equipamento)
+# Categorization functions
 
 def categorize_ac(val):
     try:
@@ -39,7 +39,8 @@ def categorize_pc(val):
         return None
     return 'normal (<150)' if num < 150 else 'significativa (≥150)'
 
-# Categorização segundo limites de referência para ambas as razões (0–30, 30–300, >300)
+# Reference categorization for both ratios
+
 def categorize_ref(val):
     try:
         v = str(val).strip().lower()
@@ -57,68 +58,64 @@ def categorize_ref(val):
         return 'micro (30–300)'
     return 'macro (>300)'
 
-st.title('Comparativo Clínico de A/C e P/C')
-uploaded = st.file_uploader('Carregue o arquivo Excel', type=['xlsx'])
+st.title('Análise de A/C e P/C por Equipamento e Área')
 
-if uploaded:
-    # Leitura básica
-    df = pd.read_excel(uploaded, header=3, engine='openpyxl')
-    df.columns = df.columns.str.strip()
+uploaded = st.file_uploader('Carregue o arquivo Excel', type=['xlsx','csv'])
+if not uploaded:
+    st.info('Por favor, carregue um arquivo CSV ou Excel para iniciar.')
+    st.stop()
 
-    # Renomear colunas
-    rename_map = {
-        'Albumina Arkray (mg/L)': 'alb_arkray', 'Creatinina Arkray (mg/dL)': 'cre_arkray',
-        'P/C Arkray (mg/gCr)': 'pc_arkray', 'A/C Arkray (mg/gCr)': 'ac_arkray',
-        'Albumina Sysmex (mg/L)': 'alb_sysmex', 'Creatinina Sysmex (mg/dL)': 'cre_sysmex',
-        'P/C Sysmex (mg/gCr)': 'pc_sysmex', 'A/C Sysmex (mg/gCr)': 'ac_sysmex',
-        'Proteínas Cobas (mg/dL)': 'prot_cobas', 'P/C Cobas (mg/gCr)': 'pc_cobas',
-        'A/C Cobas (mg/gCr)': 'ac_cobas'
-    }
-    df = df.rename(columns=rename_map)
-
-    # Categorizações por equipamento
-    for dev in ['arkray', 'sysmex', 'cobas']:
-        df[f'status_ac_{dev}'] = df[f'ac_{dev}'].apply(categorize_ac)
-        df[f'status_pc_{dev}'] = df[f'pc_{dev}'].apply(categorize_pc)
-        # também segundo referência
-        df[f'ref_ac_{dev}'] = df[f'ac_{dev}'].apply(categorize_ref)
-        df[f'ref_pc_{dev}'] = df[f'pc_{dev}'].apply(categorize_ref)
-
-    # Mostrar dados e categorias
-    st.subheader('Amostra de Dados Processados')
-    st.dataframe(df.head())
-
-    # Gráfico comparativo A/C (Equipamento x Referência)
-    st.subheader('A/C: Equipamento vs Limites de Referência')
-    comp_ac = pd.concat([
-        df['status_ac_arkray'].value_counts().rename('Arkray (EQP)'),
-        df['ref_ac_arkray'].value_counts().rename('Arkray (REF)'),
-        df['status_ac_sysmex'].value_counts().rename('Sysmex (EQP)'),
-        df['ref_ac_sysmex'].value_counts().rename('Sysmex (REF)'),
-        df['status_ac_cobas'].value_counts().rename('Cobas (EQP)'),
-        df['ref_ac_cobas'].value_counts().rename('Cobas (REF)')
-    ], axis=1).fillna(0)
-    st.bar_chart(comp_ac)
-
-    # Gráfico comparativo P/C (Equipamento x Referência)
-    st.subheader('P/C: Equipamento vs Limites de Referência')
-    comp_pc = pd.concat([
-        df['status_pc_arkray'].value_counts().rename('Arkray (EQP)'),
-        df['ref_pc_arkray'].value_counts().rename('Arkray (REF)'),
-        df['status_pc_sysmex'].value_counts().rename('Sysmex (EQP)'),
-        df['ref_pc_sysmex'].value_counts().rename('Sysmex (REF)'),
-        df['status_pc_cobas'].value_counts().rename('Cobas (EQP)'),
-        df['ref_pc_cobas'].value_counts().rename('Cobas (REF)')
-    ], axis=1).fillna(0)
-    st.bar_chart(comp_pc)
-
-    # Download do Excel completo
-    towrite = BytesIO(); df.to_excel(towrite, index=False, engine='openpyxl'); towrite.seek(0)
-    st.download_button('📥 Download do Excel Completo', data=towrite,
-                file_name='ESTUDO_URINAS_COMPARATIVO.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-    st.success('Comparativo gerado com limites visíveis!')
-
+# Read file
+if uploaded.name.lower().endswith('.csv'):
+    df = pd.read_csv(uploaded)
 else:
-    st.info('Carregue o Excel para iniciar o comparativo.')
+    df = pd.read_excel(uploaded, header=3, engine='openpyxl')
+
+# Clean columns
+df.columns = df.columns.str.strip()
+
+# Rename key columns
+rename_map = {
+    'Nº Tubo': 'tube', 'Área': 'area',
+    'A/C Arkray (mg/gCr)': 'ac_arkray', 'P/C Arkray (mg/gCr)': 'pc_arkray',
+    'A/C Sysmex (mg/gCr)': 'ac_sysmex', 'P/C Sysmex (mg/gCr)': 'pc_sysmex',
+    'A/C Cobas (mg/gCr)': 'ac_cobas', 'P/C Cobas (mg/gCr)': 'pc_cobas'
+}
+df = df.rename(columns=rename_map)
+
+# Categorize per equipment
+for dev in ['arkray','sysmex','cobas']:
+    df[f'status_ac_{dev}'] = df[f'ac_{dev}'].apply(categorize_ac)
+    df[f'status_pc_{dev}'] = df[f'pc_{dev}'].apply(categorize_pc)
+
+# Show individual equipment charts
+st.header('Distribuição por Equipamento')
+for dev in ['arkray','sysmex','cobas']:
+    st.subheader(f'Arkray {dev.capitalize()} - A/C')
+    st.bar_chart(df[f'status_ac_{dev}'].value_counts())
+    st.subheader(f'P/C {dev.capitalize()}')
+    st.bar_chart(df[f'status_pc_{dev}'].value_counts())
+
+# Compare normal A/C by area for each equipment
+st.header('Valores Normais de A/C por Área')
+area_ac = pd.DataFrame({
+    dev: df[df[f'status_ac_{dev}']=='normal (<30)'].groupby('area').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_ac)
+
+# Identify samples with completely different A/C categories across 3 equipment
+st.header('Amostras com A/C Discordante entre Equipamentos')
+mask_ac3 = df.apply(lambda r: len({r['status_ac_arkray'],r['status_ac_sysmex'],r['status_ac_cobas']})==3, axis=1)
+df_ac3 = df.loc[mask_ac3, ['tube','status_ac_arkray','status_ac_sysmex','status_ac_cobas']]
+st.write(df_ac3 if not df_ac3.empty else 'Nenhuma amostra com três categorias totalmente diferentes.')
+
+# Identify samples with completely different P/C categories across 3 equipment
+st.header('Amostras com P/C Discordante entre Equipamentos')
+mask_pc3 = df.apply(lambda r: len({r['status_pc_arkray'],r['status_pc_sysmex'],r['status_pc_cobas']})==3, axis=1)
+df_pc3 = df.loc[mask_pc3, ['tube','status_pc_arkray','status_pc_sysmex','status_pc_cobas']]
+st.write(df_pc3 if not df_pc3.empty else 'Nenhuma amostra com três categorias totalmente diferentes.')
+
+# Download processed
+st.subheader('Baixar Dados Processados')
+btn = st.download_button('📥 Baixar Excel Processado', data=BytesIO(df.to_excel(index=False, engine='openpyxl', excel_writer=BytesIO())), file_name='processed.xlsx')
