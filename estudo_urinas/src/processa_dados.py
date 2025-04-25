@@ -11,7 +11,7 @@ def categorize_ac(val):
             if v.startswith('<'):
                 return 'normal (<30)'
             if v.startswith('>') or 'over' in v:
-                return 'macro (>300)'
+                return 'albuminúria franca ou proteinúria (>300)'
             num = float(v)
         else:
             num = float(val)
@@ -20,7 +20,7 @@ def categorize_ac(val):
     if num < 30:
         return 'normal (<30)'
     if num <= 300:
-        return 'micro (30–300)'
+        return 'microalbuminúria (30–300)'
     return 'macro (>300)'
 
 
