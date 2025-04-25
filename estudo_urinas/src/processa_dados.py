@@ -9,38 +9,38 @@ def categorize_ac(valor):
         if isinstance(valor, str):
             v = valor.strip().lower()
             if v.startswith('<'):
-                return 'normal (<30 mg/g)'
+                return 'Abaixo do normal (<30 mg/g)'
             if v.startswith('>') or 'over' in v:
-                return 'albuminúria manifesta (>300 mg/g)'
+                return 'Acima do normal (>300 mg/g)'
             num = float(v)
         else:
             num = float(valor)
     except:
         return None
     if num < 30:
-        return 'normal (<30 mg/g)'
+        return 'Abaixo do normal (<30 mg/g)'
     if num <= 300:
-        return 'microalbuminúria (30–300 mg/g)'
-    return 'albuminúria manifesta (>300 mg/g)'
+        return 'Normal (30–300 mg/g)'
+    return 'Acima do normal (>300 mg/g)'
 
 def categorize_pc(valor):
     try:
         if isinstance(valor, str):
             v = valor.strip().lower()
             if v.startswith('<'):
-                return 'normal (<150 mg/g)'
+                return 'Abaixo do normal (<150 mg/g)'
             if v.startswith('>') or 'over' in v:
-                return 'proteinúria manifesta (>300 mg/g)'
+                return 'Acima do normal (>300 mg/g)'
             num = float(v)
         else:
             num = float(valor)
     except:
         return None
     if num < 150:
-        return 'normal (<150 mg/g)'
+        return 'Abaixo do normal (<150 mg/g)'
     if num <= 300:
-        return 'microproteinúria (150–300 mg/g)'
-    return 'proteinúria manifesta (>300 mg/g)'
+        return 'Normal (150–300 mg/g)'
+    return 'Acima do normal (>300 mg/g)'
 
 def categorize_ref(valor):
     try:
@@ -54,10 +54,10 @@ def categorize_ref(valor):
     except:
         return None
     if num < 30:
-        return 'normal (<30 mg/g)'
+        return 'Abaixo do normal (<30 mg/g)'
     if num <= 300:
-        return 'microalbuminúria (30–300 mg/g)'
-    return 'albuminúria manifesta (>300 mg/g)'
+        return 'Normal (30–300 mg/g)'
+    return 'Acima do normal (>300 mg/g)'
 
 # — Título e uploader — #
 st.title('Análise de Albumina/Creatinina e Proteína/Creatinina')
