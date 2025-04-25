@@ -110,40 +110,55 @@ for dev in ['arkray','sysmex','cobas']:
     if f'status_pc_{dev}' in df.columns:
         st.subheader(f'{nome} – Proteína/Creatinina')
         st.bar_chart(df[f'status_pc_{dev}'].value_counts())
+        
+# — Gráficos por Área — #
+st.header('Distribuição por Área e Categoria')
+for titulo, categoria in [
+    ('Valores Normais (<30 mg/g)',       'normal (<30 mg/g)'),
+    ('Microalbuminúria (30–300 mg/g)',    'microalbuminúria (30–300 mg/g)'),
+    ('Albuminúria manifesta (>300 mg/g)', 'albuminúria manifesta (>300 mg/g)')
+]:
+    st.subheader(titulo)
+    records = []
+    for dev in ['Arkray','Sysmex','Cobas']:
+        cor = cores[dev]
+        mask = df[f'Status AC {dev}'] == categoria
+        grp = (df[mask]
+            .groupby('Área')
+            .size()
+            .reset_index(name='Contagem'))
+        grp['Equipamento'] = dev
+        records.append(grp)
+    df_area = pd.concat(records, ignore_index=True)
+    chart_area = (
+        alt.Chart(df_area)
+        .mark_bar()
+        .encode(
+            x=alt.X('Área:N', axis=alt.Axis(labelAngle=0, title='Área')),
+            y=alt.Y('Contagem:Q', title='N.º de amostras'),
+            color=alt.Color('Equipamento:N',
+                            scale=alt.Scale(range=list(cores.values())))
+        )
+        .properties(width=700)
+    )
+    st.altair_chart(chart_area, use_container_width=True)
 
-# — Gráfico de Valores Normais por Área — #
-st.header('Valores Normais de Albumina/Creatinina por Área')
-area_ac = pd.DataFrame({
-    dev.capitalize(): df[df[f'status_ac_{dev}']=='normal (<30 mg/g)']
-                        .groupby('área').size()
-    for dev in ['arkray','sysmex','cobas']
-}).fillna(0)
-st.area_chart(area_ac)
+# — Amostras Discordantes — #
+st.header('Amostras Discordantes nos Três Equipamentos')
+for tipo, label in [('AC','Albumina/Creatinina'), ('PC','Proteína/Creatinina')]:
+    st.subheader(label)
+    mask = df.apply(
+        lambda r: len({
+            r.get(f'Status {tipo} Arkray'),
+            r.get(f'Status {tipo} Sysmex'),
+            r.get(f'Status {tipo} Cobas')
+        }) == 3,
+        axis=1
+    )
+    cols = ['Tubo'] + [f'Status {tipo} {dev}' for dev in ['Arkray','Sysmex','Cobas']]
+    df_diff = df.loc[mask, cols]
+    st.write(df_diff if not df_diff.empty else 'Nenhuma amostra com três categorias diferentes.')
 
-# — Gráficos de Referência (Limites Oficiais) — #
-ordem = ['normal (<30 mg/g)',
-        'microalbuminúria (30–300 mg/g)',
-        'albuminúria manifesta (>300 mg/g)']
-cores = {'arkray':'#1f77b4','sysmex':'#ff7f0e','cobas':'#2ca02c'}
-
-st.header('Distribuição por Equipamento (Limites de Referência)')
-for dev in ['arkray','sysmex','cobas']:
-    cor = cores[dev]
-    st.subheader(f'{dev.capitalize()} – Albumina/Creatinina (Ref.)')
-    vc = (df[f'ac_{dev}']
-        .apply(categorize_ref)
-        .value_counts()
-        .reindex(ordem, fill_value=0)
-        .reset_index(name='Contagem')
-        .rename(columns={'index':'Categoria'}))
-    chart = (alt.Chart(vc)
-            .mark_bar(color=cor)
-            .encode(
-                x=alt.X('Categoria:N', sort=ordem, axis=alt.Axis(labelAngle=0)),
-                y=alt.Y('Contagem:Q', title='N.º de amostras')
-            )
-            .properties(width=600))
-    st.altair_chart(chart, use_container_width=True)
 
 # — Amostras Discordantes — #
 st.header('Amostras com Categorias Diferentes nos Três Equipamentos')
