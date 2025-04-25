@@ -59,6 +59,23 @@ def categorize_ref(valor):
         return 'Normal (30–300 mg/g)'
     return 'Acima do normal (>300 mg/g)'
 
+def detect_header_row(excel_bytes, sheet_name=0, keywords=None, max_rows=10):
+    """
+    Lê as primeiras max_rows linhas do Excel (sem header) e 
+    devolve o índice da linha que contém todas as keywords.
+    """
+    if keywords is None:
+        keywords = ['Nº Tubo', 'Área', 'A/C Arkray', 'P/C Arkray']
+    # lê sem header
+    preview = pd.read_excel(io.BytesIO(excel_bytes), sheet_name=sheet_name,
+                            header=None, nrows=max_rows)
+    for idx, row in preview.iterrows():
+        text = ' '.join(str(x) for x in row.values if pd.notna(x))
+        if all(kw in text for kw in keywords):
+            return idx
+    # fallback
+    return None
+
 # — Título e uploader — #
 st.title('Análise de Albumina/Creatinina e Proteína/Creatinina')
 uploaded = st.file_uploader('Carregue o ficheiro (Excel ou CSV)', type=['xlsx','csv'])
@@ -70,7 +87,15 @@ if not uploaded:
 if uploaded.name.lower().endswith('.csv'):
     df = pd.read_csv(uploaded)
 else:
-    df = pd.read_excel(uploaded, header=3, engine='openpyxl')
+    # lê o ficheiro em bytes
+    raw = uploaded.read()
+    # detecta header row
+    header_row = detect_header_row(raw)
+    if header_row is not None:
+        df = pd.read_excel(io.BytesIO(raw), header=header_row, engine='openpyxl')
+    else:
+        # fallback ao header padrão
+        df = pd.read_excel(io.BytesIO(raw), header=3, engine='openpyxl')
 
 # Eliminar primeira coluna e colunas sem nome
 if df.columns.size > 0:
