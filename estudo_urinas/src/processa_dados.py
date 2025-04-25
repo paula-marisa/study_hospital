@@ -69,9 +69,17 @@ if uploaded.name.lower().endswith('.csv'):
     df = pd.read_csv(uploaded)
 else:
     df = pd.read_excel(uploaded, header=3, engine='openpyxl')
+    
+# Clean columns: drop first column and unnamed columns
+# é aqui que você elimin a primeira coluna:
+if df.columns.size > 0:
+    df = df.iloc[:, 1:]
+# é aqui que remove as colunas sem nome (Unnamed)
+df = df.loc[:, ~df.columns.str.startswith('Unnamed')]
 
-# Clean columns
+# Strip names and drop any colunas cujo nome fique vazio
 df.columns = df.columns.str.strip()
+df = df.loc[:, df.columns.astype(bool)]
 
 # Rename key columns
 rename_map = {
