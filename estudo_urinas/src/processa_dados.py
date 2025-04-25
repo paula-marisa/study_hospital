@@ -110,81 +110,38 @@ for dev in ['arkray','sysmex','cobas']:
     if f'status_pc_{dev}' in df.columns:
         st.subheader(f'{nome} – Proteína/Creatinina')
         st.bar_chart(df[f'status_pc_{dev}'].value_counts())
-
-# — Gráfico de valores por Área para Albumina/Creatinina — #
-st.header('Distribuição de A/C por Área')
-
-# Definimos as três categorias
-cats_ac = [
-    ('Valores abaixo do normal (<30 mg/g)', 'normal (<30 mg/g)'),
-    ('Microalbuminúria (30–300 mg/g)',   'microalbuminúria (30–300 mg/g)'),
-    ('Albuminúria manifesta (>300 mg/g)','albuminúria manifesta (>300 mg/g)')
-]
-
-# — Valores abaixo do normal (<30) — #
-st.header('A/C abaixo do normal por área')
-area_ac_abaixo = pd.DataFrame({
-    dev.capitalize(): df[df[f'status_ac_{dev}']=='normal (<30 mg/g)']
-                        .groupby('área').size()
-    for dev in ['arkray','sysmex','cobas']
-}).fillna(0)
-st.area_chart(area_ac_abaixo)
-
-# — Valores microalbuminúria (30–300) — #
-st.header('A/C microalbuminúria por área')
-area_ac_micro = pd.DataFrame({
-    dev.capitalize(): df[df[f'status_ac_{dev}']=='microalbuminúria (30–300 mg/g)']
-                        .groupby('área').size()
-    for dev in ['arkray','sysmex','cobas']
-}).fillna(0)
-st.area_chart(area_ac_micro)
-
-# — Albuminúria manifesta (>300) — #
-st.header('A/C acima do normal por área')
-area_ac_alta = pd.DataFrame({
-    dev.capitalize(): df[df[f'status_ac_{dev}']=='albuminúria manifesta (>300 mg/g)']
-                        .groupby('área').size()
-    for dev in ['arkray','sysmex','cobas']
-}).fillna(0)
-st.area_chart(area_ac_alta)
-
-# — Gráfico de valores por Área para Proteína/Creatinina — #
-st.header('Distribuição de P/C por Área')
-
-# As categorias agora com limites de P/C
-cats_pc = [
-    ('Valores abaixo do normal (<150 mg/g)', 'normal (<150 mg/g)'),
-    ('Microproteinúria (150–300 mg/g)',      'microproteinúria (150–300 mg/g)'),
-    ('Proteinúria manifesta (>300 mg/g)',    'proteinúria manifesta (>300 mg/g)')
-]
-
-# — P/C abaixo do normal (<150) — #
-st.header('P/C abaixo do normal por área')
-area_pc_abaixo = pd.DataFrame({
-    dev.capitalize(): df[df[f'status_pc_{dev}']=='normal (<150 mg/g)']
-                        .groupby('área').size()
-    for dev in ['arkray','sysmex','cobas']
-}).fillna(0)
-st.area_chart(area_pc_abaixo)
-
-# — P/C microproteinúria (150–300) — #
-st.header('P/C microproteinúria por área')
-area_pc_micro = pd.DataFrame({
-    dev.capitalize(): df[df[f'status_pc_{dev}']=='microproteinúria (150–300 mg/g)']
-                        .groupby('área').size()
-    for dev in ['arkray','sysmex','cobas']
-}).fillna(0)
-st.area_chart(area_pc_micro)
-
-# — P/C proteinúria manifesta (>300) — #
-st.header('P/C acima do normal por área')
-area_pc_alta = pd.DataFrame({
-    dev.capitalize(): df[df[f'status_pc_{dev}']=='proteinúria manifesta (>300 mg/g)']
-                        .groupby('área').size()
-    for dev in ['arkray','sysmex','cobas']
-}).fillna(0)
-st.area_chart(area_pc_alta)
-
+# — Área charts com cores definidas — #
+st.header('Distribuição por Área e Categoria')
+for tipo, prefixo, cats in [
+    ('A/C','status_ac_',['normal (<30 mg/g)','microalbuminúria (30–300 mg/g)','albuminúria manifesta (>300 mg/g)']),
+    ('P/C','status_pc_',['normal (<150 mg/g)','microproteinúria (150–300 mg/g)','proteinúria manifesta (>300 mg/g)'])
+]:
+    st.subheader(tipo)
+    for cat in cats:
+        st.markdown(f'**{cat}**')
+        registros = []
+        for dev in equipamentos:
+            df_area = (
+                df[df[f'{prefixo}{dev}']==cat]
+                  .groupby('área').size()
+                  .reset_index(name='Contagem')
+            )
+            df_area['Equipamento'] = dev.capitalize()
+            registros.append(df_area)
+        df_long = pd.concat(registros, ignore_index=True)
+        chart = (
+            alt.Chart(df_long)
+               .mark_area(opacity=0.6)
+               .encode(
+                   x=alt.X('área:N', axis=alt.Axis(labelAngle=0,title='Área')),
+                   y='Contagem:Q',
+                   color=alt.Color('Equipamento:N',
+                       scale=alt.Scale(domain=[d.capitalize() for d in equipamentos],
+                                       range=[cores[d] for d in equipamentos]))
+               )
+               .properties(width=700)
+        )
+        st.altair_chart(chart, use_container_width=True)
 
 # — Amostras discordantes — #
 st.header('Amostras com categorias totalmente diferentes')
