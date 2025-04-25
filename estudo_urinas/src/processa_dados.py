@@ -111,30 +111,32 @@ st.header('Distribuição por Equipamento')
 for dev, cor in zip(['Arkray','Sysmex','Cobas'], ['#1f77b4','#ff7f0e','#2ca02c']):
     st.subheader(f'{dev} – Albumina/Creatinina')
     data_ac = (
-        df[f'Status AC {dev}']
-        .value_counts()
-        .reset_index()
-        .rename(columns={'index':'Categoria', f'Status AC {dev}':'Contagem'})
-    )
-    chart_ac = (
-        alt.Chart(data_ac)
-        .mark_bar(color=cor)
-        .encode(
-            x=alt.X('Categoria:N', axis=alt.Axis(labelAngle=0)),
-            y=alt.Y('Contagem:Q', title='Número de amostras')
-        )
-        .properties(width=500)
-    )
-    st.altair_chart(chart_ac, use_container_width=True)
+    df[f'Status AC {dev}']
+    .value_counts()
+    .reset_index(name='Contagem')    # aqui o nome da série passa a ser 'Contagem'
+    .rename(columns={'index':'Categoria'})
+)
 
-    st.subheader(f'{dev} – Proteína/Creatinina')
-    data_pc = (
-        df[f'Status PC {dev}']
-        .value_counts()
-        .reset_index()
-        .rename(columns={'index':'Categoria', f'Status PC {dev}':'Contagem'})
+chart_ac = (
+    alt.Chart(data_ac)
+    .mark_bar(color=cor)
+    .encode(
+        x=alt.X('Categoria:N', axis=alt.Axis(labelAngle=0, title='Categoria')),
+        y=alt.Y('Contagem:Q', title='Número de amostras')
     )
-    chart_pc = (
+    .properties(width=600)
+)
+st.altair_chart(chart_ac, use_container_width=True)
+
+st.subheader(f'{dev} – Proteína/Creatinina')
+data_pc = (
+    df[f'Status PC {dev}']
+    .value_counts()
+    .reset_index(name='Contagem')
+    .rename(columns={'index':'Categoria'})
+)
+
+chart_pc = (
         alt.Chart(data_pc)
         .mark_bar(color=cor)
         .encode(
@@ -143,7 +145,7 @@ for dev, cor in zip(['Arkray','Sysmex','Cobas'], ['#1f77b4','#ff7f0e','#2ca02c']
         )
         .properties(width=500)
     )
-    st.altair_chart(chart_pc, use_container_width=True)
+st.altair_chart(chart_pc, use_container_width=True)
 
 # Gráficos por área para valores NORMAL, MICRO e ALTO
 limites = [
