@@ -68,7 +68,7 @@ if not uploaded:
     st.info('Por favor, carregue um ficheiro para iniciar o processamento.')
     st.stop()
 
-# — Leitura do Ficheiro — #
+# — Leitura — #
 if uploaded.name.lower().endswith('.csv'):
     df = pd.read_csv(uploaded)
 else:
@@ -84,33 +84,26 @@ df = df.loc[:, df.columns.astype(bool)]  # remove colunas sem nome
 # — Renomear Colunas — #
 df = df.rename(columns={
     'Nº Tubo':        'Tubo',
-    'Área':           'área',
-    'A/C Arkray (mg/gCr)': 'ac_arkray',
-    'P/C Arkray (mg/gCr)': 'pc_arkray',
-    'A/C Sysmex (mg/gCr)': 'ac_sysmex',
-    'P/C Sysmex (mg/gCr)': 'pc_sysmex',
-    'A/C Cobas (mg/gCr)':  'ac_cobas',
-    'P/C Cobas (mg/gCr)':  'pc_cobas'
+    'Área':           'Área',
+    'A/C Arkray (mg/gCr)': 'AC Arkray',
+    'P/C Arkray (mg/gCr)': 'PC Arkray',
+    'A/C Sysmex (mg/gCr)': 'AC Sysmex',
+    'P/C Sysmex (mg/gCr)': 'PC Sysmex',
+    'A/C Cobas (mg/gCr)':  'AC Cobas',
+    'P/C Cobas (mg/gCr)':  'PC Cobas'
 })
 
-# — Categorização por Equipamento — #
-for dev in ['arkray','sysmex','cobas']:
-    if f'ac_{dev}' in df.columns:
-        df[f'status_ac_{dev}'] = df[f'ac_{dev}'].apply(categorize_ac)
-    if f'pc_{dev}' in df.columns:
-        df[f'status_pc_{dev}'] = df[f'pc_{dev}'].apply(categorize_pc)
+# — Categorização — #
+for dev in ['Arkray','Sysmex','Cobas']:
+    ac_col = f'AC {dev}'
+    pc_col = f'PC {dev}'
+    if ac_col in df.columns:
+        df[f'Status AC {dev}'] = df[ac_col].apply(categorize_ac)
+        df[f'Ref AC {dev}']    = df[ac_col].apply(categorize_ref)
+    if pc_col in df.columns:
+        df[f'Status PC {dev}'] = df[pc_col].apply(categorize_pc)
+        df[f'Ref PC {dev}']    = df[pc_col].apply(categorize_ref)
 
-# — Gráficos Originais (Status do Equipamento) — #
-st.header('Distribuição por Equipamento (Status do Equipamento)')
-for dev in ['arkray','sysmex','cobas']:
-    nome = dev.capitalize()
-    if f'status_ac_{dev}' in df.columns:
-        st.subheader(f'{nome} – Albumina/Creatinina')
-        st.bar_chart(df[f'status_ac_{dev}'].value_counts())
-    if f'status_pc_{dev}' in df.columns:
-        st.subheader(f'{nome} – Proteína/Creatinina')
-        st.bar_chart(df[f'status_pc_{dev}'].value_counts())
-        
 # — Ordem das Categorias — #
 ordem_cats = [
     'normal (<30 mg/g)',
@@ -118,7 +111,49 @@ ordem_cats = [
     'albuminúria manifesta (>300 mg/g)'
 ]
 cores = {'Arkray':'#1f77b4','Sysmex':'#ff7f0e','Cobas':'#2ca02c'}
-        
+
+# — Gráficos Individuais (Limites de Referência) — #
+st.header('Distribuição por Equipamento (Limites de Referência)')
+for dev in ['Arkray','Sysmex','Cobas']:
+    cor = cores[dev]
+    # Albumina/Creatinina
+    st.subheader(f'{dev} – Albumina/Creatinina')
+    vc_ac = (df[f'Ref AC {dev}']
+             .value_counts()
+             .reindex(ordem_cats, fill_value=0)
+             .reset_index(name='Contagem')
+             .rename(columns={'index':'Categoria'}))
+    chart_ac = (
+        alt.Chart(vc_ac)
+           .mark_bar(color=cor)
+           .encode(
+               x=alt.X('Categoria:N', sort=ordem_cats,
+                       axis=alt.Axis(labelAngle=0, title='Categoria')),
+               y=alt.Y('Contagem:Q', title='N.º de amostras')
+           )
+           .properties(width=600)
+    )
+    st.altair_chart(chart_ac, use_container_width=True)
+
+    # Proteína/Creatinina
+    st.subheader(f'{dev} – Proteína/Creatinina')
+    vc_pc = (df[f'Ref PC {dev}']
+             .value_counts()
+             .reindex(ordem_cats, fill_value=0)
+             .reset_index(name='Contagem')
+             .rename(columns={'index':'Categoria'}))
+    chart_pc = (
+        alt.Chart(vc_pc)
+           .mark_bar(color=cor)
+           .encode(
+               x=alt.X('Categoria:N', sort=ordem_cats,
+                       axis=alt.Axis(labelAngle=0, title='Categoria')),
+               y=alt.Y('Contagem:Q', title='N.º de amostras')
+           )
+           .properties(width=600)
+    )
+    st.altair_chart(chart_pc, use_container_width=True)
+
 # — Gráficos por Área — #
 st.header('Distribuição por Área e Categoria')
 for titulo, categoria in [
@@ -132,22 +167,22 @@ for titulo, categoria in [
         cor = cores[dev]
         mask = df[f'Status AC {dev}'] == categoria
         grp = (df[mask]
-            .groupby('Área')
-            .size()
-            .reset_index(name='Contagem'))
+               .groupby('Área')
+               .size()
+               .reset_index(name='Contagem'))
         grp['Equipamento'] = dev
         records.append(grp)
     df_area = pd.concat(records, ignore_index=True)
     chart_area = (
         alt.Chart(df_area)
-        .mark_bar()
-        .encode(
-            x=alt.X('Área:N', axis=alt.Axis(labelAngle=0, title='Área')),
-            y=alt.Y('Contagem:Q', title='N.º de amostras'),
-            color=alt.Color('Equipamento:N',
-                            scale=alt.Scale(range=list(cores.values())))
-        )
-        .properties(width=700)
+           .mark_bar()
+           .encode(
+               x=alt.X('Área:N', axis=alt.Axis(labelAngle=0, title='Área')),
+               y=alt.Y('Contagem:Q', title='N.º de amostras'),
+               color=alt.Color('Equipamento:N',
+                               scale=alt.Scale(range=list(cores.values())))
+           )
+           .properties(width=700)
     )
     st.altair_chart(chart_area, use_container_width=True)
 
@@ -167,28 +202,15 @@ for tipo, label in [('AC','Albumina/Creatinina'), ('PC','Proteína/Creatinina')]
     df_diff = df.loc[mask, cols]
     st.write(df_diff if not df_diff.empty else 'Nenhuma amostra com três categorias diferentes.')
 
-
-# — Amostras Discordantes — #
-st.header('Amostras com Categorias Diferentes nos Três Equipamentos')
-for tipo,label in [('ac','Albumina/Creatinina'), ('pc','Proteína/Creatinina')]:
-    st.subheader(label)
-    mask = df.apply(lambda r: len({
-        r.get(f'status_{tipo}_arkray'),
-        r.get(f'status_{tipo}_sysmex'),
-        r.get(f'status_{tipo}_cobas')
-    })==3, axis=1)
-    cols = ['Tubo'] + [f'status_{tipo}_{dev}' for dev in ['arkray','sysmex','cobas']]
-    df_diff = df.loc[mask, cols]
-    if df_diff.empty:
-        st.write('Nenhuma amostra com três categorias diferentes.')
-    else:
-        st.write(df_diff)
-
 # — Transferir Dados Processados — #
 towrite = BytesIO()
 df.to_excel(towrite, index=False, engine='openpyxl')
 towrite.seek(0)
-st.download_button('📥 Transferir Excel Processado',
-                data=towrite,
-                file_name='dados_processados.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+st.download_button(
+    '📥 Transferir Excel Processado',
+    data=towrite,
+    file_name='dados_processados.xlsx',
+    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+)
+st.success('Os dados foram processados com sucesso!')
+st.balloons()   
