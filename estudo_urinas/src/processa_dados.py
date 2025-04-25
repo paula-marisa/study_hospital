@@ -59,33 +59,30 @@ def categorize_ref(valor):
         return 'microalbuminúria (30–300 mg/g)'
     return 'albuminúria manifesta (>300 mg/g)'
 
-# — Definições gerais — #
+# — Título e uploader — #
 st.title('Análise de Albumina/Creatinina e Proteína/Creatinina')
-cores = {'arkray':'blue','sysmex':'green','cobas':'red'}
-equipamentos = ['arkray','sysmex','cobas']
-
-# — Upload e leitura — #
 uploaded = st.file_uploader('Carregue o ficheiro (Excel ou CSV)', type=['xlsx','csv'])
 if not uploaded:
     st.info('Por favor, carregue um ficheiro para iniciar o processamento.')
     st.stop()
 
+# — Leitura e limpeza — #
 if uploaded.name.lower().endswith('.csv'):
     df = pd.read_csv(uploaded)
 else:
     df = pd.read_excel(uploaded, header=3, engine='openpyxl')
 
-# — Limpeza de colunas — #
+# Eliminar primeira coluna e colunas sem nome
 if df.columns.size > 0:
     df = df.iloc[:, 1:]
 df = df.loc[:, ~df.columns.str.startswith('Unnamed')]
 df.columns = df.columns.str.strip()
 df = df.loc[:, df.columns.astype(bool)]
 
-# — Renomear colunas — #
+# Renomear colunas chave
 df = df.rename(columns={
     'Nº Tubo': 'Tubo',
-    'Área':    'área',
+    'Área': 'área',
     'A/C Arkray (mg/gCr)': 'ac_arkray',
     'P/C Arkray (mg/gCr)': 'pc_arkray',
     'A/C Sysmex (mg/gCr)': 'ac_sysmex',
@@ -94,85 +91,123 @@ df = df.rename(columns={
     'P/C Cobas (mg/gCr)':  'pc_cobas'
 })
 
-# — Categorização — #
-for dev in equipamentos:
-    if f'ac_{dev}' in df:
+# — Categorização por equipamento — #
+for dev in ['arkray','sysmex','cobas']:
+    if f'ac_{dev}' in df.columns:
         df[f'status_ac_{dev}'] = df[f'ac_{dev}'].apply(categorize_ac)
         df[f'ref_ac_{dev}']    = df[f'ac_{dev}'].apply(categorize_ref)
-    if f'pc_{dev}' in df:
+    if f'pc_{dev}' in df.columns:
         df[f'status_pc_{dev}'] = df[f'pc_{dev}'].apply(categorize_pc)
         df[f'ref_pc_{dev}']    = df[f'pc_{dev}'].apply(categorize_ref)
 
-# — Gráficos de barras com Altair (Status interno) — #
-st.header('Distribuição por Equipamento (Status Interno)')
-for tipo, func in [('Albumina/Creatinina','status_ac_'),
-                ('Proteína/Creatinina','status_pc_')]:
-    for dev in equipamentos:
-        campo = f'{func}{dev}'
-        if campo in df:
-            nome = dev.capitalize()
-            vc = (df[campo]
-                .value_counts()
-                .reset_index(name='Contagem')
-                .rename(columns={'index':'Categoria'}))
-            chart = (alt.Chart(vc)
-                    .mark_bar(color=cores[dev])
-                    .encode(
-                        x=alt.X('Categoria:N', axis=alt.Axis(labelAngle=0,title='Categoria')),
-                        y=alt.Y('Contagem:Q', title='N.º de amostras')
-                    )
-                    .properties(width=400, title=f'{nome} – {tipo}'))
-            st.altair_chart(chart, use_container_width=True)
+# — Exibir gráficos individuais (Status do equipamento) — #
+st.header('Distribuição por equipamento (Status interno)')
+for dev in ['arkray','sysmex','cobas']:
+    nome = dev.capitalize()
+    if f'status_ac_{dev}' in df.columns:
+        st.subheader(f'{nome} – Albumina/Creatinina')
+        st.bar_chart(df[f'status_ac_{dev}'].value_counts())
+    if f'status_pc_{dev}' in df.columns:
+        st.subheader(f'{nome} – Proteína/Creatinina')
+        st.bar_chart(df[f'status_pc_{dev}'].value_counts())
 
-# — Gráficos de área por Categoria e Área (Status interno) — #
-st.header('Valores por Área e Categoria (Status Interno)')
-for tipo, func, cats in [
-    ('A/C','status_ac_',['normal (<30 mg/g)','microalbuminúria (30–300 mg/g)','albuminúria manifesta (>300 mg/g)']),
-    ('P/C','status_pc_',['normal (<150 mg/g)','microproteinúria (150–300 mg/g)','proteinúria manifesta (>300 mg/g)'])
-]:
-    st.subheader(f'{tipo} por Área')
-    for cat in cats:
-        st.markdown(f'**{cat}**')
-        records = []
-        for dev in equipamentos:
-            campo = f'{func}{dev}'
-            df_area = (df[df[campo]==cat]
-                    .groupby('área')
-                    .size()
-                    .reset_index(name='Contagem'))
-            df_area['Equipamento'] = dev.capitalize()
-            records.append(df_area)
-        long = pd.concat(records,ignore_index=True)
-        chart = (alt.Chart(long)
-                .mark_area(opacity=0.4)
-                .encode(
-                    x=alt.X('área:N', axis=alt.Axis(labelAngle=0,title='Área')),
-                    y='Contagem:Q',
-                    color=alt.Color('Equipamento:N',
-                                    scale=alt.Scale(domain=[d.capitalize() for d in equipamentos],
-                                                    range=[cores[d] for d in equipamentos]))
-                )
-                .properties(width=600))
-        st.altair_chart(chart, use_container_width=True)
+# — Gráfico de valores por Área para Albumina/Creatinina — #
+st.header('Distribuição de A/C por Área')
+
+# Definimos as três categorias
+cats_ac = [
+    ('Valores abaixo do normal (<30 mg/g)', 'normal (<30 mg/g)'),
+    ('Microalbuminúria (30–300 mg/g)',   'microalbuminúria (30–300 mg/g)'),
+    ('Albuminúria manifesta (>300 mg/g)','albuminúria manifesta (>300 mg/g)')
+]
+
+# — Valores abaixo do normal (<30) — #
+st.header('A/C abaixo do normal por área')
+area_ac_abaixo = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_ac_{dev}']=='normal (<30 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_ac_abaixo)
+
+# — Valores microalbuminúria (30–300) — #
+st.header('A/C microalbuminúria por área')
+area_ac_micro = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_ac_{dev}']=='microalbuminúria (30–300 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_ac_micro)
+
+# — Albuminúria manifesta (>300) — #
+st.header('A/C acima do normal por área')
+area_ac_alta = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_ac_{dev}']=='albuminúria manifesta (>300 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_ac_alta)
+
+# — Gráfico de valores por Área para Proteína/Creatinina — #
+st.header('Distribuição de P/C por Área')
+
+# As categorias agora com limites de P/C
+cats_pc = [
+    ('Valores abaixo do normal (<150 mg/g)', 'normal (<150 mg/g)'),
+    ('Microproteinúria (150–300 mg/g)',      'microproteinúria (150–300 mg/g)'),
+    ('Proteinúria manifesta (>300 mg/g)',    'proteinúria manifesta (>300 mg/g)')
+]
+
+# — P/C abaixo do normal (<150) — #
+st.header('P/C abaixo do normal por área')
+area_pc_abaixo = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_pc_{dev}']=='normal (<150 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_pc_abaixo)
+
+# — P/C microproteinúria (150–300) — #
+st.header('P/C microproteinúria por área')
+area_pc_micro = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_pc_{dev}']=='microproteinúria (150–300 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_pc_micro)
+
+# — P/C proteinúria manifesta (>300) — #
+st.header('P/C acima do normal por área')
+area_pc_alta = pd.DataFrame({
+    dev.capitalize(): df[df[f'status_pc_{dev}']=='proteinúria manifesta (>300 mg/g)']
+                        .groupby('área').size()
+    for dev in ['arkray','sysmex','cobas']
+}).fillna(0)
+st.area_chart(area_pc_alta)
+
 
 # — Amostras discordantes — #
-st.header('Amostras com Categorias Diferentes')
-for tipo,label in [('ac','Albumina/Creatinina'),('pc','Proteína/Creatinina')]:
+st.header('Amostras com categorias totalmente diferentes')
+for tipo,label in [('ac','Albumina/Creatinina'), ('pc','Proteína/Creatinina')]:
     st.subheader(label)
     mask = df.apply(lambda r: len({
         r.get(f'status_{tipo}_arkray'),
         r.get(f'status_{tipo}_sysmex'),
         r.get(f'status_{tipo}_cobas')
     })==3, axis=1)
-    cols = ['Tubo']+[f'status_{tipo}_{dev}' for dev in equipamentos]
-    df_diff = df.loc[mask,cols]
+    cols = ['Tubo'] + [f'status_{tipo}_{dev}' for dev in ['arkray','sysmex','cobas']]
+    df_diff = df.loc[mask, cols]
     st.write(df_diff if not df_diff.empty else 'Nenhuma amostra com três categorias diferentes.')
 
-# — Transferir Excel processado — #
+# — Transferir dados processados — #
 towrite = BytesIO()
 df.to_excel(towrite, index=False, engine='openpyxl')
 towrite.seek(0)
-st.download_button('📥 Transferir Excel Processado',
-                data=towrite,
-                file_name='dados_processados.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+st.download_button(
+    '📥 Transferir Excel Processado',
+    data=towrite,
+    file_name='dados_processados.xlsx',
+    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+)
+
+st.success('Os dados foram processados com sucesso!')  
